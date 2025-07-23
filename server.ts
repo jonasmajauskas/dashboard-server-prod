@@ -35,6 +35,11 @@ const PORT = 4000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res.send('Dashboard server is running.');
+});
+
+
 app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any> => {
   console.log('➡️  /api/initiate-oauth route triggered');
 
