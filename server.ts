@@ -77,7 +77,7 @@ app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any
     return res.json({
       oauth_token: parsed.oauth_token,
       oauth_token_secret: parsed.oauth_token_secret,
-      auth_url: `https://us.etrade.com/e/t/etws/authorize?key=${process.env.CONSUMER_KEY}&token=${parsed.oauth_token}`,
+      auth_url: `https://us.etrade.com/e/t/etws/authorize?key=${process.env.CONSUMER_KEY_PROD}&token=${parsed.oauth_token}`,
     });
   } catch (err: any) {
   console.error('❌ Error during initiate-oauth:');
