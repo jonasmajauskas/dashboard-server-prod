@@ -66,7 +66,7 @@ app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any
 
   console.log('📤 Sending initiate-oauth request to E*TRADE...');
   console.log('🛠 OAuth URL:', url);
-  console.log('🛠 OAuth Headers:', config.headers);
+  console.log('🛠 OAuth config:', config);
 
   try {
     const response = await axios.get(url, config);
