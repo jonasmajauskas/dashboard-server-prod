@@ -21,8 +21,8 @@ console.log('🔧 Initializing E*TRADE OAuth server...');
 
 const oauth = new OAuth({
   consumer: {
-    key: process.env.CONSUMER_KEY || '',
-    secret: process.env.CONSUMER_SECRET || '',
+    key: process.env.CONSUMER_KEY_PROD || '',
+    secret: process.env.CONSUMER_SECRET_PROD || '',
   },
   signature_method: 'HMAC-SHA1',
   hash_function(baseString, key) {
