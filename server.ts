@@ -252,14 +252,14 @@ app.get('/api/fetch-sp500-quotes', async (req: Request, res: Response): Promise<
 
     if (uniqueQuotes.length > 0) {
       try {
-        const response = await axios.post('http://localhost:4000/api/add-todays-highs', {
+        const response = await axios.post('https://dashboard-server-prod.vercel.app/api/add-todays-highs', {
           highs: uniqueQuotes,
         });
         console.log(`📬 Sent ${uniqueQuotes.length} new highs to /api/add-todays-highs`);
         console.log('🧾 Supabase response:', response.data);
 
         // ✅ After storing new highs, fetch historical data
-        const response2 = await axios.get('http://localhost:4000/api/get-historical-data');
+        const response2 = await axios.get('https://dashboard-server-prod.vercel.app/api/get-historical-data');
         console.log('📊 Historical data fetch triggered for new highs.', response2.status);
         historicalData = response2.data;
       } catch (err) {
@@ -280,7 +280,7 @@ app.get('/api/fetch-sp500-quotes', async (req: Request, res: Response): Promise<
     timeZone: 'America/New_York',
   }) + ' EST';
 
-  await axios.post('http://localhost:4000/api/pull-times', {
+  await axios.post('https://dashboard-server-prod.vercel.app/api/pull-times', {
     timestamp: formattedDate
   });
 
@@ -446,7 +446,7 @@ app.post('/api/set-pull-time', async (_req: Request, res: Response): Promise<any
 
 //     console.log('✅ Access token response:', rawParsed);
 
-//     axios.post('http://localhost:4000/api/fetch-sp500-quotes', {
+//     axios.post('https://dashboard-server-prod.vercel.app/api/fetch-sp500-quotes', {
 //       access_token,
 //       access_token_secret,
 //     }).then(() => {
