@@ -32,7 +32,11 @@ const oauth = new OAuth({
 
 const app = express();
 const PORT = 4000;
-app.use(cors());
+app.use(cors({
+  origin: 'https://dashboard-prod-green.vercel.app', // or use a dynamic/env variable
+  methods: ['GET', 'POST'],
+  credentials: true, // optional, if using cookies
+}));
 app.use(express.json());
 
 app.get('/', (_req, res) => {
