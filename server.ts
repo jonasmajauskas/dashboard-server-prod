@@ -80,11 +80,20 @@ app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any
       auth_url: `https://us.etrade.com/e/t/etws/authorize?key=${process.env.CONSUMER_KEY}&token=${parsed.oauth_token}`,
     });
   } catch (err: any) {
-    console.error('❌ Error during initiate-oauth:');
-    console.error('Status:', err.response?.status);
-    console.error('Body:', err.response?.data || err.message);
-    return res.status(500).json({ error: 'OAuth request failed' });
+  console.error('❌ Error during initiate-oauth:');
+
+  if (err.response) {
+    console.error('Status:', err.response.status);
+    console.error('Headers:', err.response.headers);
+    console.error('Body:', err.response.data);
+  } else if (err.request) {
+    console.error('No response received:', err.request);
+  } else {
+    console.error('Error setting up request:', err.message);
   }
+
+  return res.status(500).json({ error: 'OAuth request failed', details: err.message });
+}
 
 });
 
