@@ -607,6 +607,7 @@ app.post('/api/set-pull-time', async (_req: Request, res: Response): Promise<any
 //   }
 // });
 
+export default app;
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
