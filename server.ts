@@ -33,7 +33,7 @@ const oauth = new OAuth({
 const app = express();
 const PORT = 4000;
 app.use(cors({
-  origin: 'https://dashboard-prod-green.vercel.app/dashboard', // or use a dynamic/env variable
+  origin: 'https://dashboard-prod-green.vercel.app', // Only the domain, no path
   methods: ['GET', 'POST'],
   credentials: true, // optional, if using cookies
 }));
