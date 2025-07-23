@@ -1,0 +1,27 @@
+{
+  "name": "dashboard-server",
+  "version": "1.0.0",
+  "description": "E*TRADE OAuth + S&P500 dashboard server",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.0",
+    "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "oauth-1.0a": "^2.2.6",
+    "querystring": "^0.2.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.3",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
