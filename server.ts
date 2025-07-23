@@ -43,9 +43,6 @@ app.get('/', (_req, res) => {
   res.send('Dashboard server is running.');
 });
 
-console.log('🔐 Using key:', process.env.CONSUMER_KEY_PROD);
-console.log('🔐 Using secret:', process.env.CONSUMER_SECRET_PROD);
-
 
 app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any> => {
   console.log('➡️  /api/initiate-oauth route triggered');
@@ -68,7 +65,8 @@ app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any
   };
 
   console.log('📤 Sending initiate-oauth request to E*TRADE...');
-  // console.log('🛠 OAuth Headers:', config.headers);
+  console.log('🛠 OAuth URL:', url);
+  console.log('🛠 OAuth Headers:', config.headers);
 
   try {
     const response = await axios.get(url, config);
