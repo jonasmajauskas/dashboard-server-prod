@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-// dotenv.config(); // ✅ This must be BEFORE using process.env
+dotenv.config(); // ✅ This must be BEFORE using process.env
 
 
 const supabase = createClient(
@@ -43,11 +43,10 @@ app.get('/', (_req, res) => {
   res.send('Dashboard server is running.');
 });
 
-
 app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any> => {
   console.log('➡️  /api/initiate-oauth route triggered');
 
-  const url = 'https://api.etrade.com/oauth/request_token?format=json';
+  const url = 'https://api.etrade.com/oauth/request_token';
   const request_data = {
     url,
     method: 'GET' as const,
@@ -62,41 +61,118 @@ app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any
     headers: {
       ...authHeader,
     },
+    validateStatus: () => true, // allows capturing non-2xx responses
   };
 
-  console.log('📤 Sending initiate-oauth request to E*TRADE...');
-  console.log('🛠 OAuth URL:', url);
-  console.log('🛠 OAuth config:', config);
+  // 🧾 Log Request Details
+  console.log('---📤 E*TRADE REQUEST---');
+  console.log('URL:', url);
+  console.log('Method:', request_data.method);
+  console.log('Headers:', config.headers);
+  console.log('Body:', request_data.data); // for GET this is just oauth_callback
+  console.log('------------------------');
 
   try {
     const response = await axios.get(url, config);
-    console.log('initiate-oauth response', response.data);
+
+    // 🧾 Log Response Details
+    console.log('---📥 E*TRADE RESPONSE---');
+    console.log('Status:', response.status);
+    console.log('Headers:', response.headers);
+    console.log('X-ET-Trace:', response.headers['x-et-trace'] || '❌ Not present');
+    console.log('Body:', response.data);
+    console.log('--------------------------');
+
+    if (response.status !== 200) {
+      return res.status(response.status).json({
+        error: 'E*TRADE returned an error',
+        status: response.status,
+        body: response.data,
+        x_et_trace: response.headers['x-et-trace'] || null,
+      });
+    }
 
     const parsed = qs.parse(response.data);
-    console.log('initiate-oauth response parsed', parsed);
+    console.log('✅ Parsed OAuth response:', parsed);
 
     return res.json({
       oauth_token: parsed.oauth_token,
       oauth_token_secret: parsed.oauth_token_secret,
       auth_url: `https://us.etrade.com/e/t/etws/authorize?key=${process.env.CONSUMER_KEY_PROD}&token=${parsed.oauth_token}`,
+      x_et_trace: response.headers['x-et-trace'] || null,
     });
   } catch (err: any) {
-  console.error('❌ Error during initiate-oauth:');
+    console.error('❌ Exception during initiate-oauth');
 
-  if (err.response) {
-    console.error('Status:', err.response.status);
-    console.error('Headers:', err.response.headers);
-    console.error('Body:', err.response.data);
-  } else if (err.request) {
-    console.error('No response received:', err.request);
-  } else {
-    console.error('Error setting up request:', err.message);
+    if (err.response) {
+      console.error('Status:', err.response.status);
+      console.error('Headers:', err.response.headers);
+      console.error('X-ET-Trace:', err.response.headers['x-et-trace'] || '❌ Not present');
+      console.error('Body:', err.response.data);
+    } else if (err.request) {
+      console.error('No response received:', err.request);
+    } else {
+      console.error('Request setup error:', err.message);
+    }
+
+    return res.status(500).json({ error: 'OAuth request failed', details: err.message });
   }
-
-  return res.status(500).json({ error: 'OAuth request failed', details: err.message });
-}
-
 });
+
+
+// app.get('/api/initiate-oauth', async (_req: Request, res: Response): Promise<any> => {
+//   console.log('➡️  /api/initiate-oauth route triggered');
+
+//   const url = 'https://api.etrade.com/oauth/request_token?format=json';
+//   const request_data = {
+//     url,
+//     method: 'GET' as const,
+//     data: {
+//       oauth_callback: 'oob',
+//     },
+//   };
+
+//   const authHeader = oauth.toHeader(oauth.authorize(request_data));
+
+//   const config: AxiosRequestConfig = {
+//     headers: {
+//       ...authHeader,
+//     },
+//   };
+
+//   console.log('📤 Sending initiate-oauth request to E*TRADE...');
+//   console.log('🛠 OAuth URL:', url);
+//   console.log('🛠 OAuth config:', config);
+
+//   try {
+//     const response = await axios.get(url, config);
+//     console.log('initiate-oauth response', response.data);
+
+//     const parsed = qs.parse(response.data);
+//     console.log('initiate-oauth response parsed', parsed);
+
+//     return res.json({
+//       oauth_token: parsed.oauth_token,
+//       oauth_token_secret: parsed.oauth_token_secret,
+//       auth_url: `https://us.etrade.com/e/t/etws/authorize?key=${process.env.CONSUMER_KEY_PROD}&token=${parsed.oauth_token}`,
+//     });
+//   } catch (err: any) {
+//   console.error('❌ Error during initiate-oauth:');
+
+//   if (err.response) {
+//     console.error('Status:', err.response.status);
+//     console.error('Headers:', err.response.headers);
+//     console.error('Body:', err.response.data);
+//   } else if (err.request) {
+//     console.error('No response received:', err.request);
+//   } else {
+//     console.error('Error setting up request:', err.message);
+//   }
+
+//   return res.status(500).json({ error: 'OAuth request failed', details: err.message });
+// }
+
+// });
 
 // In-memory token store (not persisted across restarts)
 let storedAccessToken: string;
