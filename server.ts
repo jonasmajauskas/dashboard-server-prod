@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-dotenv.config(); // ✅ This must be BEFORE using process.env
+// dotenv.config(); // ✅ This must be BEFORE using process.env
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
