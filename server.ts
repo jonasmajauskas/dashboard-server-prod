@@ -11,7 +11,6 @@ import { createClient } from '@supabase/supabase-js';
 
 dotenv.config(); // ✅ This must be BEFORE using process.env
 
-
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -33,7 +32,7 @@ const oauth = new OAuth({
 const app = express();
 const PORT = 4000;
 app.use(cors({
-  origin: 'https://dashboard-prod-green.vercel.app', // Only the domain, no path
+  origin: 'http://localhost:5173', // Only the domain, no path
   methods: ['GET', 'POST'],
   credentials: true, // optional, if using cookies
 }));
@@ -233,157 +232,465 @@ app.post('/api/execute-oauth', async (req: Request, res: Response): Promise<any>
 });
 
 
-app.get('/api/fetch-sp500-quotes', async (req: Request, res: Response): Promise<any> => {
+// app.get('/api/fetch-sp500-quotes', async (req: Request, res: Response): Promise<any> => {
+//   console.log(`📡 fetch-sp500-quotes API started`);
+
+//   try {
+//     const tickersPath = path.join(__dirname, 'sp500_tickers.json');
+//     const tickers = JSON.parse(fs.readFileSync(tickersPath, 'utf-8')).sp500_tickers;
+//     console.log(`📦 Loaded ${tickers.length} tickers`);
+
+//     const chunkArray = (arr: string[], size: number) =>
+//       Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+//         arr.slice(i * size, i * size + size)
+//       );
+
+//     const chunks = chunkArray(tickers, 50);
+//     console.log(`📊 Divided into ${chunks.length} chunks of up to 50`);
+
+//     const seenSymbols = new Set();
+//     const results = await Promise.all(
+//       chunks.map(async (batch, index) => {
+//         const symbols = batch.join(',');
+//         const quoteUrl = `https://api.etrade.com/v1/market/quote/${symbols}.json?overrideSymbolCount=true`;
+
+//         const quoteRequest = {
+//           url: quoteUrl,
+//           method: 'GET' as const,
+//         };
+
+//         const quoteHeader = oauth.toHeader(
+//           oauth.authorize(quoteRequest, {
+//             key: storedAccessToken,
+//             secret: storedAccessTokenSecret,
+//           })
+//         );
+
+//         console.log(`📡 Fetching chunk ${index + 1}: ${symbols}`);
+
+//         try {
+//           const response = await axios.get(quoteUrl, {
+//             headers: { ...quoteHeader },
+//           });
+
+//           console.log(`✅ Chunk ${index + 1} success`);
+
+//           const quotes = response.data.QuoteResponse?.QuoteData || [];
+
+//           const withNewHighs = quotes.map((q: any) => {
+//             const all = q.All || {};
+//             const product = q.Product || {};
+//             const symbol = product.symbol;
+//             const lastTrade = all.lastTrade;
+//             const week52High = all.high52;
+
+//             if (!symbol || lastTrade === undefined || week52High === undefined) {
+//               return null;
+//             }
+
+//             if (seenSymbols.has(symbol)) {
+//               return null;
+//             }
+//             seenSymbols.add(symbol);
+
+//             const isNewHigh = lastTrade >= week52High;
+
+//             if (isNewHigh) {
+//               console.log(`🚀 NEW HIGH: ${symbol} — lastTrade: ${lastTrade}, 52wHigh: ${week52High}`);
+//             }
+
+//             return {
+//               companyName: all.companyName || '',
+//               symbol,
+//               ask: all.ask,
+//               askSize: all.askSize,
+//               bid: all.bid,
+//               bidSize: all.bidSize,
+//               high52: all.high52,
+//               low52: all.low52,
+//               averageVolume: all.averageVolume,
+//               price: lastTrade,
+//               growth: all.high52 && lastTrade ? (((lastTrade - all.low52) / all.low52) * 100).toFixed(2) : null,
+//               industry: all.industry || '',
+//               isNewHigh,
+//             };
+//           }).filter(Boolean);
+
+//           return withNewHighs;
+//         } catch (error) {
+//           console.error(`❌ Error fetching chunk ${index + 1}:`, error);
+//           return null;
+//         }
+//       })
+//     );
+//     const combinedQuotes = results.flat().filter(Boolean);
+//     let historicalData = null;
+
+//     // Deduplicate by symbol
+//     const uniqueQuotesMap = new Map();
+//     for (const quote of combinedQuotes) {
+//       if (!uniqueQuotesMap.has(quote.symbol)) {
+//         uniqueQuotesMap.set(quote.symbol, quote);
+//       }
+//     }
+//     const uniqueQuotes = Array.from(uniqueQuotesMap.values());
+
+//     if (uniqueQuotes.length > 0) {
+//       try {
+//         const response = await axios.post('https://dashboard-server-prod.vercel.app/api/add-todays-highs', {
+//           highs: uniqueQuotes,
+//         });
+//         console.log(`📬 Sent ${uniqueQuotes.length} new highs to /api/add-todays-highs`);
+//         console.log('🧾 Supabase response:', response.data);
+
+//         // ✅ After storing new highs, fetch historical data
+//         const response2 = await axios.get('https://dashboard-server-prod.vercel.app/api/get-historical-data');
+//         console.log('📊 Historical data fetch triggered for new highs.', response2.status);
+//         historicalData = response2.data;
+//       } catch (err) {
+//         console.error('❌ Failed to call /api/add-todays-highs or /api/get-historical-data:');
+//       }
+//     } else {
+//       console.log('ℹ️ No new highs found to send.');
+//     }
+
+//     try {
+//   const formattedDate = new Date().toLocaleString('en-US', {
+//     month: '2-digit',
+//     day: '2-digit',
+//     year: '2-digit',
+//     hour: '2-digit',
+//     minute: '2-digit',
+//     hour12: false,
+//     timeZone: 'America/New_York',
+//   }) + ' EST';
+
+//   await axios.post('https://dashboard-server-prod.vercel.app/api/pull-times', {
+//     timestamp: formattedDate
+//   });
+
+//   console.log(`🕓 Pull time recorded as: ${formattedDate}`);
+// } catch (err) {
+//   console.error('❌ Failed to send pull time to /api/pull-times:');
+// }
+
+
+//     console.log(`🎯 Fetched quotes from ${combinedQuotes.length} stocks across ${chunks.length} chunks`);
+
+// return res.json(historicalData);  
+// } catch (err: any) {
+//     console.error('❌ Error fetching quotes:', err.response?.data || err.message);
+//     return res.status(500).json({ error: 'Failed to fetch quotes' });
+//   }
+// });
+
+
+//WORKS
+// app.get('/api/fetch-sp500-quotes', async (_req: Request, res: Response): Promise<any> => {
+//   console.log(`📡 fetch-sp500-quotes API started`);
+
+//   try {
+//     const tickersPath = path.join(__dirname, 'sp500_tickers.json');
+//     const tickers: string[] = JSON.parse(fs.readFileSync(tickersPath, 'utf-8')).sp500_tickers;
+//     console.log(`📦 Loaded ${tickers.length} tickers`);
+
+//     const chunkArray = (arr: string[], size: number) =>
+//       Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
+
+//     const chunks = chunkArray(tickers, 50);
+//     console.log(`📊 Divided into ${chunks.length} chunks of up to 50`);
+
+//     const seenSymbols = new Set<string>();
+
+//     const chunkResults = await Promise.all(
+//       chunks.map(async (batch, index) => {
+//         const symbols = batch.join(',');
+//         // 🔁 Use the correct env-specific host here if you added a switch:
+//         const quoteUrl = `https://api.etrade.com/v1/market/quote/${symbols}.json?overrideSymbolCount=true&detailFlag=ALL`;
+
+//         const quoteRequest = { url: quoteUrl, method: 'GET' as const };
+//         const quoteHeader = oauth.toHeader(
+//           oauth.authorize(quoteRequest, { key: storedAccessToken, secret: storedAccessTokenSecret })
+//         );
+
+//         console.log(`📡 Fetching chunk ${index + 1}: ${symbols}`);
+
+//         try {
+//           const response = await axios.get(quoteUrl, { headers: { ...quoteHeader } });
+//           if (response.status !== 200) return [];
+
+//           const quotes = response.data?.QuoteResponse?.QuoteData || [];
+
+//           // 🔎 Optional: inspect APH in this chunk
+//           // if (Array.isArray(quotes)) {
+//           //   const aph = quotes.find((q: any) => q?.Product?.symbol === 'APH');
+//           //   if (aph) {
+//           //     const a = aph.All ?? {};
+//           //     console.log('🔎 APH snapshot', {
+//           //       lastTrade: a.lastTrade,
+//           //       dayHigh: a.high,      // intraday high
+//           //       high52: a.high52,
+//           //       low52: a.low52,
+//           //     });
+//           //   }
+//           // }
+
+//           // Map → compute fields → KEEP ONLY NEW HIGHS (intraday or last trade)
+//           const newHighs = quotes
+//             .map((q: any) => {
+//               const all = q.All ?? {};
+//               const product = q.Product ?? {};
+//               const symbol = product.symbol as string | undefined;
+
+//               // coerce to numbers
+//               const lastTrade = all.lastTrade != null ? Number(all.lastTrade) : undefined;
+//               const dayHigh = all.high != null ? Number(all.high) : undefined; // intraday high
+//               const high52 = all.high52 != null ? Number(all.high52) : undefined;
+//               const low52 = all.low52 != null ? Number(all.low52) : undefined;
+
+//               if (!symbol || high52 == null) return null;
+
+//               // New-high logic: intraday high OR last trade reaches/exceeds prior 52w high
+//               const hitNewHigh =
+//                 (dayHigh != null && dayHigh >= high52) ||
+//                 (lastTrade != null && lastTrade >= high52);
+
+//               if (!hitNewHigh) return null;
+
+//               console.log(`🚀 NEW HIGH ${symbol} | last=${lastTrade} dayHigh=${dayHigh} vs 52w=${high52}`);
+
+//               const growth =
+//                 low52 && low52 > 0 && lastTrade != null
+//                   ? Number(((lastTrade - low52) / low52) * 100).toFixed(2)
+//                   : null;
+
+//               return {
+//                 companyName: all.companyName ?? '',
+//                 symbol,
+//                 price: lastTrade ?? dayHigh ?? high52, // best available
+//                 high52,
+//                 low52,
+//                 averageVolume: all.averageVolume ?? null,
+//                 industry: all.industry ?? '',
+//                 isNewHigh: true,
+//                 growth,
+//               };
+//             })
+//             .filter(Boolean);
+
+//           return newHighs;
+//         } catch (err) {
+//           console.error(`❌ Error fetching chunk ${index + 1}:`, err);
+//           return [];
+//         }
+
+//       })
+//     );
+
+//     // Flatten and dedupe by symbol
+//     const flat: any[] = chunkResults.flat();
+//     const unique: any[] = [];
+//     for (const row of flat) {
+//       if (!seenSymbols.has(row.symbol)) {
+//         seenSymbols.add(row.symbol);
+//         unique.push(row);
+//       }
+//     }
+
+//     // Persist ONLY new highs
+//     if (unique.length > 0) {
+//       try {
+//         // (A) Direct insert is simpler than POSTing to your own endpoint
+//         const { error } = await supabase.from('newHighs').insert(unique);
+//         if (error) throw error;
+//         console.log(`📬 Inserted ${unique.length} new highs into Supabase`);
+
+//         // (B) If you still want to return historical snapshot:
+//         const { data: hist, error: histErr } = await supabase
+//           .from('newHighs')
+//           .select('*')
+//           .order('created_at', { ascending: false });
+
+//         if (histErr) throw histErr;
+
+//         console.log(`🎯 Returning ${unique.length} new highs (filtered)`);
+//         return res.status(200).json({ highs: unique, historical: hist });
+//       } catch (e: any) {
+//         console.error('❌ Supabase error:', e.message || e);
+//         // Still return the highs we found, even if persistence failed
+//         return res.status(207).json({ highs: unique, error: 'Persist failed' });
+//       }
+//     } else {
+//       console.log('ℹ️ No new highs found.');
+//       return res.status(200).json({ highs: [] });
+//     }
+
+//     try {
+//       const formattedDate = new Date().toLocaleString('en-US', {
+//         month: '2-digit',
+//         day: '2-digit',
+//         year: '2-digit',
+//         hour: '2-digit',
+//         minute: '2-digit',
+//         hour12: false,
+//         timeZone: 'America/New_York',
+//       }) + ' EST';
+
+//       await axios.post('https://dashboard-server-prod.vercel.app/api/pull-times', {
+//         timestamp: formattedDate
+//       });
+
+//       console.log(`🕓 Pull time recorded as: ${formattedDate}`);
+//     } catch (err) {
+//       console.error('❌ Failed to send pull time to /api/pull-times:');
+//     }
+
+//   } catch (err: any) {
+//     console.error('❌ Error fetching quotes:', err.response?.data || err.message);
+//     return res.status(500).json({ error: 'Failed to fetch quotes' });
+//   }
+// });
+
+app.get('/api/fetch-sp500-quotes', async (_req: Request, res: Response): Promise<any> => {
   console.log(`📡 fetch-sp500-quotes API started`);
 
   try {
     const tickersPath = path.join(__dirname, 'sp500_tickers.json');
-    const tickers = JSON.parse(fs.readFileSync(tickersPath, 'utf-8')).sp500_tickers;
+    const tickers: string[] = JSON.parse(fs.readFileSync(tickersPath, 'utf-8')).sp500_tickers;
     console.log(`📦 Loaded ${tickers.length} tickers`);
 
     const chunkArray = (arr: string[], size: number) =>
-      Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-        arr.slice(i * size, i * size + size)
-      );
+      Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
 
     const chunks = chunkArray(tickers, 50);
     console.log(`📊 Divided into ${chunks.length} chunks of up to 50`);
 
-    const seenSymbols = new Set();
-    const results = await Promise.all(
+    const seenSymbols = new Set<string>();
+
+    const chunkResults = await Promise.all(
       chunks.map(async (batch, index) => {
         const symbols = batch.join(',');
-        const quoteUrl = `https://apisb.etrade.com/v1/market/quote/${symbols}.json?overrideSymbolCount=true`;
+        const quoteUrl = `https://api.etrade.com/v1/market/quote/${symbols}.json?overrideSymbolCount=true&detailFlag=ALL`;
 
-        const quoteRequest = {
-          url: quoteUrl,
-          method: 'GET' as const,
-        };
-
+        const quoteRequest = { url: quoteUrl, method: 'GET' as const };
         const quoteHeader = oauth.toHeader(
-          oauth.authorize(quoteRequest, {
-            key: storedAccessToken,
-            secret: storedAccessTokenSecret,
-          })
+          oauth.authorize(quoteRequest, { key: storedAccessToken, secret: storedAccessTokenSecret })
         );
 
         console.log(`📡 Fetching chunk ${index + 1}: ${symbols}`);
 
         try {
-          const response = await axios.get(quoteUrl, {
-            headers: { ...quoteHeader },
-          });
+          const response = await axios.get(quoteUrl, { headers: { ...quoteHeader } });
+          if (response.status !== 200) return [];
 
-          console.log(`✅ Chunk ${index + 1} success`);
+          const quotes = response.data?.QuoteResponse?.QuoteData || [];
 
-          const quotes = response.data.QuoteResponse?.QuoteData || [];
+          const newHighs = quotes
+            .map((q: any) => {
+              const all = q.All ?? {};
+              const product = q.Product ?? {};
+              const symbol = product.symbol as string | undefined;
 
-          const withNewHighs = quotes.map((q: any) => {
-            const all = q.All || {};
-            const product = q.Product || {};
-            const symbol = product.symbol;
-            const lastTrade = all.lastTrade;
-            const week52High = all.high52;
+              const lastTrade = all.lastTrade != null ? Number(all.lastTrade) : undefined;
+              const dayHigh = all.high != null ? Number(all.high) : undefined;
+              const high52 = all.high52 != null ? Number(all.high52) : undefined;
+              const low52 = all.low52 != null ? Number(all.low52) : undefined;
 
-            if (!symbol || lastTrade === undefined || week52High === undefined) {
-              return null;
-            }
+              if (!symbol || high52 == null) return null;
 
-            if (seenSymbols.has(symbol)) {
-              return null;
-            }
-            seenSymbols.add(symbol);
+              const hitNewHigh =
+                (dayHigh != null && dayHigh >= high52) ||
+                (lastTrade != null && lastTrade >= high52);
 
-            const isNewHigh = lastTrade >= week52High;
+              if (!hitNewHigh) return null;
 
-            if (isNewHigh) {
-              console.log(`🚀 NEW HIGH: ${symbol} — lastTrade: ${lastTrade}, 52wHigh: ${week52High}`);
-            }
+              console.log(`🚀 NEW HIGH ${symbol} | last=${lastTrade} dayHigh=${dayHigh} vs 52w=${high52}`);
 
-            return {
-              companyName: all.companyName || '',
-              symbol,
-              ask: all.ask,
-              askSize: all.askSize,
-              bid: all.bid,
-              bidSize: all.bidSize,
-              high52: all.high52,
-              low52: all.low52,
-              averageVolume: all.averageVolume,
-              price: lastTrade,
-              growth: all.high52 && lastTrade ? (((lastTrade - all.low52) / all.low52) * 100).toFixed(2) : null,
-              industry: all.industry || '',
-              isNewHigh,
-            };
-          }).filter(Boolean);
+              const growth =
+                low52 && low52 > 0 && lastTrade != null
+                  ? Number(((lastTrade - low52) / low52) * 100).toFixed(2)
+                  : null;
 
-          return withNewHighs;
-        } catch (error) {
-          console.error(`❌ Error fetching chunk ${index + 1}:`, error);
-          return null;
+              return {
+                companyName: all.companyName ?? '',
+                symbol,
+                price: lastTrade ?? dayHigh ?? high52,
+                high52,
+                low52,
+                averageVolume: all.averageVolume ?? null,
+                industry: all.industry ?? '',
+                isNewHigh: true,
+                growth,
+              };
+            })
+            .filter(Boolean);
+
+          return newHighs;
+        } catch (err) {
+          console.error(`❌ Error fetching chunk ${index + 1}:`, err);
+          return [];
         }
       })
     );
-    const combinedQuotes = results.flat().filter(Boolean);
-    let historicalData = null;
 
-    // Deduplicate by symbol
-    const uniqueQuotesMap = new Map();
-    for (const quote of combinedQuotes) {
-      if (!uniqueQuotesMap.has(quote.symbol)) {
-        uniqueQuotesMap.set(quote.symbol, quote);
+    // Flatten and dedupe
+    const flat: any[] = chunkResults.flat();
+    const unique: any[] = [];
+    for (const row of flat) {
+      if (!seenSymbols.has(row.symbol)) {
+        seenSymbols.add(row.symbol);
+        unique.push(row);
       }
     }
-    const uniqueQuotes = Array.from(uniqueQuotesMap.values());
 
-    if (uniqueQuotes.length > 0) {
+    // Function to log pull time in Supabase
+const recordPullTime = async () => {
+  const nowUtcIso = new Date().toISOString(); // e.g., 2025-08-12T02:35:00.000Z
+  try {
+    const { error } = await supabase
+      .from('pullTimes')
+      .insert([{ pullTime: nowUtcIso }]); // pullTime is timestamptz
+    if (error) console.error('❌ pullTimes insert error:', error.message);
+    else console.log(`🕓 Pull time recorded (UTC): ${nowUtcIso}`);
+  } catch (e:any) {
+    console.error('❌ Unexpected pullTimes error:', e.message || e);
+  }
+};
+
+
+    // Persist highs & record pull time before returning
+    if (unique.length > 0) {
       try {
-        const response = await axios.post('https://dashboard-server-prod.vercel.app/api/add-todays-highs', {
-          highs: uniqueQuotes,
-        });
-        console.log(`📬 Sent ${uniqueQuotes.length} new highs to /api/add-todays-highs`);
-        console.log('🧾 Supabase response:', response.data);
+        const { error } = await supabase.from('newHighs').insert(unique);
+        if (error) throw error;
+        console.log(`📬 Inserted ${unique.length} new highs into Supabase`);
 
-        // ✅ After storing new highs, fetch historical data
-        const response2 = await axios.get('https://dashboard-server-prod.vercel.app/api/get-historical-data');
-        console.log('📊 Historical data fetch triggered for new highs.', response2.status);
-        historicalData = response2.data;
-      } catch (err) {
-        console.error('❌ Failed to call /api/add-todays-highs or /api/get-historical-data:');
+        const { data: hist, error: histErr } = await supabase
+          .from('newHighs')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (histErr) throw histErr;
+
+        await recordPullTime();
+        console.log(`🎯 Returning ${unique.length} new highs (filtered)`);
+        return res.status(200).json({ highs: unique, historical: hist });
+      } catch (e: any) {
+        console.error('❌ Supabase error:', e.message || e);
+        await recordPullTime();
+        return res.status(207).json({ highs: unique, error: 'Persist failed' });
       }
     } else {
-      console.log('ℹ️ No new highs found to send.');
+      console.log('ℹ️ No new highs found.');
+      await recordPullTime();
+      return res.status(200).json({ highs: [] });
     }
-
-    try {
-  const formattedDate = new Date().toLocaleString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'America/New_York',
-  }) + ' EST';
-
-  await axios.post('https://dashboard-server-prod.vercel.app/api/pull-times', {
-    timestamp: formattedDate
-  });
-
-  console.log(`🕓 Pull time recorded as: ${formattedDate}`);
-} catch (err) {
-  console.error('❌ Failed to send pull time to /api/pull-times:');
-}
-
-
-    console.log(`🎯 Fetched quotes from ${combinedQuotes.length} stocks across ${chunks.length} chunks`);
-
-return res.json(historicalData);  
-} catch (err: any) {
+  } catch (err: any) {
     console.error('❌ Error fetching quotes:', err.response?.data || err.message);
     return res.status(500).json({ error: 'Failed to fetch quotes' });
   }
 });
+
 
 
 app.post('/api/add-todays-highs', async (req: Request, res: Response): Promise<any> => {
