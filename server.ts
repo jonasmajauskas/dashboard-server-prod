@@ -32,7 +32,7 @@ const oauth = new OAuth({
 const app = express();
 const PORT = 4000;
 app.use(cors({
-  origin: 'http://localhost:5173', // Only the domain, no path
+  origin: 'https://dashboard-prod-green.vercel.app', // Only the domain, no path
   methods: ['GET', 'POST'],
   credentials: true, // optional, if using cookies
 }));
